@@ -10,6 +10,8 @@ It runs on the server, so whoever runs the server installs it. Players then use 
 
 Files and commands use the name *ResourceMap* (`ResourceMap.dll`, `.rmap`).
 
+> **Made with AI assistance:** much of the code and documentation was written with Claude Code (Anthropic's AI coding tool), directed and tested by the author on a live V Rising server.
+
 ## Install
 
 Needs [BepInExPack V Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) on the **dedicated server**. For the chat commands, also install [VampireCommandFramework](https://thunderstore.io/c/v-rising/p/deca/VampireCommandFramework/) (optional: without it, everything except the commands still works).
