@@ -2,7 +2,7 @@
 
 ## 1.0.0
 
-First public release.
+First public release, as Prospector (files and commands use the name ResourceMap).
 
 - Dumps every resource node on the server (ores, trees, rocks, plants) with position, what it gives, and what its spot can roll into, with odds.
 - Records the game's own map projection so the viewer lines nodes up on the in-game map automatically.

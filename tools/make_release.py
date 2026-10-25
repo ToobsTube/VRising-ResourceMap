@@ -44,10 +44,10 @@ def main():
 
     # Thunderstore: mod managers copy plugins/ into BepInEx/plugins/<Team>-ResourceMap/.
     manifest = {
-        "name": "ResourceMap",
+        "name": "Prospector",
         "version_number": v,
         "website_url": "https://github.com/ToobsTube/VRising-ResourceMap",
-        "description": "Maps every ore, plant and tree on your server with per-spot spawn odds. "
+        "description": "Server plugin: every ore, plant and tree on your server with per-spot spawn odds. "
                        "Chat commands to find and mark resources, and Discord sharing of map dumps.",
         "dependencies": THUNDERSTORE_DEPENDENCIES,
     }

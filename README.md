@@ -1,10 +1,14 @@
-# ResourceMap for V Rising
+# Prospector for V Rising
 
-A server plugin that shows where resources really are on **your** V Rising server: every ore vein, tree, rock and plant, what each spot can turn into, and **the odds for each spot**. Community maps can tell you where sulfur *can* appear. This tells you that a given spot is 2% sulfur and 91% stone, and which spots are worth the trip.
+A **server plugin** (BepInEx) that knows where the resources really are on your V Rising server: every ore vein, tree, rock and plant, what each spot can turn into, and **the odds for each spot**. Community maps tell you where sulfur *can* appear. Prospector tells you that a given spot is 2% sulfur and 91% stone, and which spots are worth the trip.
 
-- **Map viewer:** open a dump in the browser at **https://toobstube-site.pages.dev/vrising-map/** (or `viewer/index.html` from this repo). Pick a resource and see where it is now (dots) and where it can roll (rings, bigger = more likely).
+It runs on the server, so whoever runs the server installs it. Players then use it through chat commands, and through map dumps the server owner shares.
+
 - **Chat commands:** `.rmap find copper` gives the nearest copper around you. `.rmap mark copper` puts your map marker on it, so the game draws a path there.
+- **Map viewer:** open a dump at **https://toobstube-site.pages.dev/vrising-map/** (or `viewer/index.html` from this repo). Pick a resource and see where it is now (dots) and where it can roll (rings, bigger = more likely).
 - **Sharing:** dumps can be posted to a Discord channel automatically, which also works on hosted servers with no ports or FTP.
+
+Files and commands use the name *ResourceMap* (`ResourceMap.dll`, `.rmap`).
 
 ## Install
 
