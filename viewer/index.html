@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resource Map</title>
+<style>
+  :root {
+    --bg: #f4f2ef; --panel: #ffffff; --text: #1d1b19; --muted: #6b6560; --border: #ddd8d2;
+    --accent: #a3192b; --map-bg: #e6e2dc; --grid: #d3cdc5; --a-only: #c0392b; --b-only: #2471a3; --same: #8a837c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141214; --panel: #1d1a1d; --text: #ece7e3; --muted: #9a928d; --border: #332e33;
+      --accent: #e0485c; --map-bg: #0d0c0d; --grid: #262226; --a-only: #ff6b5b; --b-only: #5dade2; --same: #6d6670;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141214; --panel: #1d1a1d; --text: #ece7e3; --muted: #9a928d; --border: #332e33;
+    --accent: #e0485c; --map-bg: #0d0c0d; --grid: #262226; --a-only: #ff6b5b; --b-only: #5dade2; --same: #6d6670;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; }
+  aside { width: 300px; flex: none; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  aside header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 16px; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .scroll { overflow-y: auto; flex: 1; padding: 8px 16px 16px; }
+  section { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
+  label.file, button { display: inline-block; background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 13px; cursor: pointer; margin: 0 4px 4px 0; }
+  label.file:hover, button:hover { border-color: var(--accent); }
+  button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  label.file input { display: none; }
+  input[type=search] { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 2px 0; cursor: pointer; user-select: none; }
+  .row input { margin: 0; }
+  .kind { margin-top: 8px; font-weight: 600; }
+  .kind .n { font-weight: 400; }
+  .kind + div .row { padding-left: 14px; }
+  .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .n { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .small { font-size: 12px; color: var(--muted); }
+  select { width: 100%; padding: 6px 8px; margin-bottom: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+  .legend { font-size: 13px; display: flex; flex-direction: column; gap: 4px; margin: 2px 0 6px; }
+  .legend > div { display: flex; align-items: center; gap: 8px; }
+  .legend .dot, .legend .ring { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; box-sizing: border-box; }
+  .legend .dot { background: var(--accent); border: 1.5px solid rgba(0,0,0,.6); }
+  .legend .ring { border: 3px solid var(--accent); box-shadow: 0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.6); }
+  details > summary { cursor: pointer; padding: 10px 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  details[open] > summary { border-bottom: 1px solid var(--border); }
+  .status { font-size: 12px; color: var(--muted); margin-top: 6px; white-space: pre-line; }
+  main { flex: 1; position: relative; overflow: hidden; background: var(--map-bg); }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
+  canvas.picking { cursor: crosshair; }
+  #tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px; max-width: 320px; display: none; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+  #tip b { display: block; word-break: break-all; }
+  #banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; display: none; max-width: calc(100% - 32px); }
+  #empty { pointer-events: none; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); padding: 16px; }
+  @media (max-width: 700px) {
+    body { flex-direction: column; }
+    aside { width: 100%; max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--border); }
+    main { min-height: 55vh; }
+  }
+</style>
+</head>
+<body>
+<aside>
+  <header>
+    <h1>Resource Map</h1>
+    <div class="sub">Load <code>nodes-latest.json</code> (or the <code>.gz</code> from Discord) from your server's dump folder.</div>
+  </header>
+  <div class="scroll">
+    <section>
+      <h2>Find</h2>
+      <select id="focus"><option value="">Everything (browse by type)</option></select>
+      <select id="minChance" title="Hide spots where it's only a long shot">
+        <option value="0">Any chance</option>
+        <option value="0.05">5% or better</option>
+        <option value="0.25">25% or better</option>
+        <option value="0.5">50% or better</option>
+        <option value="0.999">Always this</option>
+      </select>
+      <div class="legend" id="legend">
+        <div><span class="dot"></span> <span id="legendNow"></span></div>
+        <div><span class="ring"></span> <span id="legendRoll"></span></div>
+      </div>
+      <div class="status" id="focusStatus">Load a dump, then pick a resource to see where it can be found.</div>
+    </section>
+    <section>
+      <h2>Dump</h2>
+      <label class="file">Load dump<input type="file" id="fileA" accept=".json,.gz"></label>
+      <div class="status" id="dumpStatus">No dump loaded. You can also drag files onto the map.</div>
+    </section>
+    <details id="more">
+      <summary>More options</summary>
+      <section>
+        <h2>Compare</h2>
+        <label class="file">Compare with another dump…<input type="file" id="fileB" accept=".json,.gz"></label>
+      </section>
+      <section>
+        <h2>Map image</h2>
+        <label class="file">Load image<input type="file" id="fileImg" accept="image/*"></label>
+        <button id="alignBtn">Align</button>
+        <button id="resetAlign">Reset</button>
+        <button id="exportAlign">Export alignment</button>
+        <label class="file">Import<input type="file" id="fileCal" accept=".js,.json"></label>
+        <div class="status" id="mapStatus">No image. Nodes are drawn on a grid.</div>
+      </section>
+      <section>
+        <h2>Browse everything</h2>
+        <div class="small" style="margin-bottom:6px">Used when Find is set to "Everything".</div>
+        <div class="row"><button id="mode" title="Now: what is at each spot right now. Can spawn: every spot where a type can appear.">Show: now</button><button id="groupBy">Group by: item</button></div>
+        <input type="search" id="search" placeholder="Filter by name…">
+        <div id="sources" style="margin-top:8px"></div>
+        <label class="row" title="Nodes the game has switched off for now (for example in an inactive area). They are not there to harvest until the game turns them back on."><input type="checkbox" id="showDisabled" checked><span class="name">Switched off by the game</span></label>
+        <label class="row" title="The server pauses areas with no players nearby. These spots are past their change time, so they will catch up, and may come back as something else, when someone gets close."><input type="checkbox" id="showOverdue" checked><span class="name">Overdue (may change when visited)</span></label>
+      </section>
+      <section>
+        <h2>Types <span class="small" style="text-transform:none;letter-spacing:0">· <a href="#" id="allOn">all</a> · <a href="#" id="allOff">none</a></span></h2>
+        <div id="groups"><div class="small">Load a dump to see resource types.</div></div>
+      </section>
+    </details>
+  </div>
+</aside>
+<main>
+  <canvas id="map"></canvas>
+  <div id="tip"></div>
+  <div id="banner"></div>
+  <div id="empty">Load a dump to get started.</div>
+</main>
+
+<!-- Optional: ship a map-calibration.js next to this file (made with "Export alignment") to preset the image alignment. -->
+<script>window.MAP_CALIBRATION = window.MAP_CALIBRATION || null;</script>
+<script src="map-calibration.js" onerror="void 0"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const canvas = $("map"), ctx = canvas.getContext("2d");
+
+const SOURCES = {
+  fixed: "Fixed (part of the map)",
+  spawnChain: "Spawn chain",
+  randomizedSpawnChain: "Randomized spawn chain",
+  spawnRegion: "Spawn region (random spot)",
+};
+const PALETTE = ["#e6194b","#3cb44b","#ffe119","#4363d8","#f58231","#911eb4","#46f0f0","#f032e6","#bcf60c","#fabebe","#008080","#e6beff","#9a6324","#fffac8","#800000","#aaffc3","#808000","#ffd8b1","#000075","#a9a9a9"];
+
+const state = {
+  a: null, b: null,            // loaded dumps {name, data, nodes}
+  groupBy: "item",
+  mode: "now",                  // "now" = what is there, "can" = what each spot can spawn
+  focus: "",                    // the one resource picked in Find ("" = browse everything)
+  minChance: 0,                 // Find: hide spots where the focus resource is less likely than this
+  hiddenGroups: new Set(),
+  hiddenKinds: new Set(["Grass & fiber", "Breakables & clutter"]),
+  hiddenSources: new Set(),
+  showDisabled: true,
+  showOverdue: true,
+  search: "",
+  img: null, imgName: "",
+  cal: null,                    // world -> image px: ix = ax*x + bx, iy = az*z + bz
+  view: { zoom: 1, panX: 0, panY: 0 },
+  align: null,                  // {step, pairs: [{w:{x,z}, i:{x,y}}], pendingWorld}
+  colors: new Map(),
+};
+
+// ---------- persistence (per-viewer convenience only) ----------
+function saveLocal(key, value) { try { localStorage.setItem("resourcemap." + key, JSON.stringify(value)); } catch {} }
+function loadLocal(key) { try { const v = localStorage.getItem("resourcemap." + key); return v ? JSON.parse(v) : null; } catch { return null; } }
+
+// ---------- naming ----------
+// Item and prefab names to something readable: "Item_Ingredient_Mineral_CopperOre" -> "Copper Ore",
+// "Item_Ingredient_Wood_Gloom" -> "Gloom Wood", "Item_Building_Plants_BloodRose_Seed" -> "Blood Rose Seed".
+function prettify(s) {
+  const t = s.replace(/^(Item_Ingredient_|Item_Building_|Item_Consumable_|Item_|TM_|CHAR_|Resource_)/, "")
+             .replace(/^(Mineral|Plant|Gem|Ingredient)_/, "")
+             .replace(/^Plants_(\w+)_Seed$/, "$1 Seed")
+             .replace(/^Wood_(\w+)$/, "$1 Wood");
+  return t.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim();
+}
+// What a prefab is, without its variant number and growth stage: "TM_Iron_04_Stage1_Resource" -> "Iron",
+// "TM_Birch_02_Stage0_Stump" -> "Birch". Variants of one thing share a key.
+function prefabKey(p) {
+  return p.replace(/^TM_/, "")
+          .replace(/_(Stage\d*|Resource|Pickup|Harvested|Interactable|Stump|Rubble|Door)(?=_|$)/gi, "")
+          .replace(/_?\d+[A-Za-z]?(?=_|$)/g, "")
+          .replace(/_+/g, "_").replace(/^_|_$/g, "");
+}
+function prefabFamily(p) { return prettify(prefabKey(p)) || prettify(p); }
+// A resource gives items when harvested; everything else (decor, barrels, fences) is clutter, whatever its name says.
+// Breakables are grouped by what they are, not what they drop, so a barrel isn't listed as "Wood".
+const isResource = (n) => n.yields && n.yields.length && kindOf(n.prefab) !== "Breakables & clutter";
+function groupOf(n) {
+  if (state.groupBy === "item" && isResource(n)) {
+    const top = n.yields.reduce((m, y) => y.amount > m.amount ? y : m, n.yields[0]);
+    return prettify(top.item);
+  }
+  return prefabFamily(n.prefab);
+}
+// The resources people hunt for get colors that read as the material; everything else takes palette colors, counted
+// per kind so ores never run out of colors because of hundreds of clutter types.
+const FIXED_COLORS = {
+  "Copper Ore": "#d9772b", "Iron Ore": "#4a6fa5", "Silver Ore": "#c7ccd6", "Sulfur Ore": "#ffe119", "Quartz": "#f5a3c7",
+  "Emery": "#3cb44b", "Ghost Crystal": "#46f0f0", "Blood Crystal": "#c4122f", "Tech Scrap": "#808000", "Stone": "#9a938c",
+};
+function assignColors(groups) {
+  state.colors = new Map(Object.entries(FIXED_COLORS));
+  const used = new Map();
+  for (const [g] of groups) {
+    if (state.colors.has(g)) continue;
+    const kind = state.kindOfGroup.get(g), i = used.get(kind) || 0;
+    used.set(kind, i + 1);
+    state.colors.set(g, PALETTE[i % PALETTE.length]);
+  }
+}
+const colorOf = (group) => state.colors.get(group) || "#888";
+
+// Broad kinds so ores aren't buried under grass and barrels. Matched against the type name.
+const KINDS = [
+  ["Grass & fiber", /fiber|grass/i],
+  ["Breakables & clutter", /barrel|urn|crate|fence|grave|tomb|coffin|box|pot\b|chest|sack|cart|statue|pole|bones|skeleton|vase|jar|basket|table|chair|bench|lantern|banner|cage|gate|sign|brazier|stick|anvil|dummy|wheelbarrow/i],
+  ["Ores & minerals", /ore\b|mineral|gem|sulph|sulfur|quartz|crystal|salt\b|copper|iron|silver|gold|coal|obsidian|emery|radium|onyx/i],
+  ["Stone", /stone|rock|boulder/i],
+  ["Wood", /wood|log|tree|lumber|oak|birch|pine|spruce|cypress|willow|maple/i],
+  ["Plants", /plant|flower|herb|shroom|seed|lotus|thistle|rose|cotton|bloom|blossom|grape|heart|clarion|lily|brier|petal|bulb/i],
+];
+function kindOf(group) { const k = KINDS.find(([, re]) => re.test(group)); return k ? k[0] : "Other"; }
+
+const isReal = (prefab) => prefab && prefab !== "TM_HiddenObject";
+
+// What a node's spot can turn into, as prefabs: [{prefab, chance}]. A randomized spot rolls one of several chains
+// (chance is its odds). A plain chain only grows back into its main stage, so it can only become that (chance null).
+function outcomesOf(n, d) {
+  const chains = d.data.chains || [], spawners = d.data.spawners || [];
+  const mainOf = (ci) => { const c = chains[ci], st = c && c.stages[c.main]; return st && isReal(st.prefab) ? st.prefab : null; };
+  if (n.spawner != null && spawners[n.spawner]) {
+    const out = spawners[n.spawner].options.map(o => ({ prefab: (o.chain != null && mainOf(o.chain)) || o.chainName, chance: o.chance }));
+    if (out.length) return out;
+  }
+  if (n.chain != null) {
+    const main = mainOf(n.chain);
+    if (main) return [{ prefab: main, chance: null }];
+  }
+  return [{ prefab: n.prefab, chance: null }];
+}
+
+// The group a prefab falls into, learned from nodes that currently are some variant of it (they carry its yields).
+function prefabGroups() {
+  const map = new Map();
+  for (const d of [state.a, state.b]) if (d) for (const n of d.nodes) {
+    const k = prefabKey(n.prefab);
+    if (!map.has(k) && n.yields && n.yields.length) map.set(k, n._g);
+  }
+  return (prefab) => map.get(prefabKey(prefab)) || prefabFamily(prefab);
+}
+
+// Outcomes summed per group, most likely first: [{group, chance}].
+function groupOutcomes(outcomes, groupOfPrefab) {
+  const m = new Map();
+  for (const o of outcomes) {
+    const g = groupOfPrefab(o.prefab);
+    m.set(g, o.chance == null ? null : (m.get(g) || 0) + o.chance);
+  }
+  return [...m].map(([group, chance]) => ({ group, chance })).sort((a, b) => (b.chance || 0) - (a.chance || 0));
+}
+
+function changeText(n) {
+  if (!hasTimer(n)) return "";
+  return n.changeIn < 0
+    ? `Overdue by ${formatDuration(-n.changeIn)}: may change or re-roll when a player gets close`
+    : `Next change in ${formatDuration(n.changeIn)}`;
+}
+function formatDuration(sec) {
+  if (sec >= 3600) return `${+(sec / 3600).toFixed(1)}h`;
+  if (sec >= 60) return `${Math.round(sec / 60)}m`;
+  return `${Math.round(sec)}s`;
+}
+const groupsOf = (n) => state.mode === "can" ? n._can : [n._g];
+
+// ---------- loading ----------
+// Dumps may be compressed (nodes-latest.json.gz, e.g. from Discord); the browser unpacks them itself.
+async function readDump(file) {
+  if (!/\.gz$/i.test(file.name)) return readFile(file);
+  return new Response(file.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+function readFile(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(file); }); }
+
+async function loadDump(file, slot) {
+  try {
+    const data = JSON.parse(await readDump(file));
+    if (!Array.isArray(data.nodes)) throw new Error("not a ResourceMap dump");
+    state[slot] = { name: file.name, data, nodes: data.nodes };
+    for (const n of data.nodes) n._g = null;
+    regroup();
+    if (slot === "a" && !state.cal) state.cal = defaultCal();
+    if (slot === "b" || state.b) compare();
+    if (slot === "a" && !applyGameMap()) fitView();
+    updateDumpStatus();
+    redraw();
+  } catch (e) {
+    $("dumpStatus").textContent = `Couldn't read ${file.name}: ${e.message}`;
+  }
+}
+
+function updateDumpStatus() {
+  const lines = [];
+  for (const [slot, label] of [["a", "Dump"], ["b", "Compare"]]) {
+    const d = state[slot]; if (!d) continue;
+    lines.push(`${label}: ${d.name}\n  ${d.nodes.length.toLocaleString()} nodes · game ${d.data.gameVersion || "?"} · ${d.data.dumpedAt ? new Date(d.data.dumpedAt).toLocaleString() : ""}`);
+  }
+  if (state.cmp) {
+    const c = state.cmp;
+    lines.push(`Same spot in both: ${c.same.toLocaleString()}\nOnly in dump: ${c.aOnly.toLocaleString()} · only in compare: ${c.bOnly.toLocaleString()}`);
+  }
+  $("dumpStatus").textContent = lines.join("\n") || "No dump loaded.";
+  $("empty").style.display = state.a ? "none" : "flex";
+}
+
+// Match nodes of the same prefab within 1 world unit. Anything unmatched either moved or isn't there in the other dump.
+function compare() {
+  state.cmp = null;
+  if (!state.a || !state.b) return;
+  const key = (n) => `${n.guid}|${Math.round(n.x)}|${Math.round(n.z)}`;
+  const bIndex = new Map();
+  for (const n of state.b.nodes) {
+    for (const dx of [-1, 0, 1]) for (const dz of [-1, 0, 1]) {
+      const k = `${n.guid}|${Math.round(n.x) + dx}|${Math.round(n.z) + dz}`;
+      if (!bIndex.has(k)) bIndex.set(k, []);
+      bIndex.get(k).push(n);
+    }
+  }
+  let same = 0;
+  for (const n of state.b.nodes) n._match = false;
+  for (const n of state.a.nodes) {
+    const hit = (bIndex.get(key(n)) || []).find(m => !m._match && Math.hypot(m.x - n.x, m.z - n.z) <= 1);
+    n._match = !!hit; if (hit) { hit._match = true; same++; }
+  }
+  state.cmp = { same, aOnly: state.a.nodes.length - same, bOnly: state.b.nodes.length - same };
+}
+
+function regroup() {
+  const counts = new Map();
+  for (const d of [state.a, state.b]) if (d) for (const n of d.nodes) n._g = groupOf(n);
+  const groupOfPrefab = prefabGroups();
+  for (const d of [state.a, state.b]) if (d) for (const n of d.nodes) {
+    n._out = groupOutcomes(outcomesOf(n, d), groupOfPrefab);
+    n._can = n._out.map(o => o.group);
+    n._chain = n.chain != null && d.data.chains ? d.data.chains[n.chain] : null;
+  }
+  for (const n of state.a ? state.a.nodes : []) for (const g of groupsOf(n)) counts.set(g, (counts.get(g) || 0) + 1);
+  if (state.b) for (const n of state.b.nodes) for (const g of groupsOf(n)) if (!counts.has(g)) counts.set(g, 0);
+  const groups = [...counts.entries()].sort((x, y) => y[1] - x[1]);
+  const resourceGroups = new Set();
+  for (const d of [state.a, state.b]) if (d) for (const n of d.nodes) if (isResource(n)) resourceGroups.add(n._g);
+  state.kindOfGroup = new Map(groups.map(([g]) => [g, resourceGroups.has(g) ? kindOf(g) : "Breakables & clutter"]));
+  state.resourceGroups = new Set([...resourceGroups].filter(g => !["Grass & fiber", "Breakables & clutter"].includes(kindOf(g))));
+  assignColors(groups);
+  buildFocusList();
+
+  const el = $("groups"); el.innerHTML = "";
+  const kindNames = [...KINDS.map(k => k[0]), "Other"].filter(k => groups.some(([g]) => state.kindOfGroup.get(g) === k))
+    .sort((x, y) => state.hiddenKinds.has(x) - state.hiddenKinds.has(y));
+  for (const kind of kindNames) {
+    const members = groups.filter(([g]) => state.kindOfGroup.get(g) === kind);
+    const head = document.createElement("label"); head.className = "row kind";
+    head.innerHTML = `<input type="checkbox"><span class="name"></span><span class="n"></span>`;
+    head.querySelector("input").checked = !state.hiddenKinds.has(kind);
+    head.querySelector(".name").textContent = kind;
+    head.querySelector(".n").textContent = members.reduce((t, [, c]) => t + c, 0).toLocaleString();
+    head.querySelector("input").onchange = (e) => { e.target.checked ? state.hiddenKinds.delete(kind) : state.hiddenKinds.add(kind); regroup(); redraw(); };
+    el.appendChild(head);
+    const box = document.createElement("div"); el.appendChild(box);
+    if (state.hiddenKinds.has(kind)) continue;
+    for (const [g, c] of members) {
+      const row = document.createElement("label"); row.className = "row";
+      row.innerHTML = `<input type="checkbox"><span class="sw"></span><span class="name"></span><span class="n"></span>`;
+      row.querySelector("input").checked = !state.hiddenGroups.has(g);
+      row.querySelector(".sw").style.background = colorOf(g);
+      row.querySelector(".name").textContent = g; row.querySelector(".name").title = g;
+      row.querySelector(".n").textContent = c.toLocaleString();
+      row.querySelector("input").onchange = (e) => { e.target.checked ? state.hiddenGroups.delete(g) : state.hiddenGroups.add(g); redraw(); };
+      box.appendChild(row);
+    }
+  }
+  const srcCounts = {};
+  for (const n of state.a ? state.a.nodes : []) srcCounts[n.source] = (srcCounts[n.source] || 0) + 1;
+  const se = $("sources"); se.innerHTML = "";
+  for (const [s, label] of Object.entries(SOURCES)) {
+    const row = document.createElement("label"); row.className = "row";
+    row.innerHTML = `<input type="checkbox"><span class="name"></span><span class="n"></span>`;
+    row.querySelector("input").checked = !state.hiddenSources.has(s);
+    row.querySelector(".name").textContent = label;
+    row.querySelector(".n").textContent = (srcCounts[s] || 0).toLocaleString();
+    row.querySelector("input").onchange = (e) => { e.target.checked ? state.hiddenSources.delete(s) : state.hiddenSources.add(s); redraw(); };
+    se.appendChild(row);
+  }
+}
+
+// ---------- game map ----------
+// The game's own world map (map.jpg, made by tools/extract_map.py) is placed using the projection the server reports
+// in the dump: the game maps world x/z onto the texture as -1..1, with +z at the top.
+const GAME_MAP = "map.jpg";
+function gameMapCal() {
+  const zone = state.a && (state.a.data.mapZones || []).find(m => m.mapType === "MainMap");
+  if (!zone || !state.img || state.imgName !== GAME_MAP) return null;
+  const [c0, , c2, c3] = zone.projection, W = state.img.naturalWidth, H = state.img.naturalHeight;
+  // u = c0.x * x + c3.x, v = c2.y * z + c3.y; image px = (u + 1) / 2 * W, (1 - v) / 2 * H
+  return { ax: c0[0] * W / 2, bx: (c3[0] + 1) * W / 2, az: -c2[1] * H / 2, bz: (1 - c3[1]) * H / 2 };
+}
+// Use the game's projection whenever both the game map and a dump that carries it are loaded.
+function applyGameMap() {
+  const cal = gameMapCal();
+  if (!cal) return false;
+  state.cal = cal; state.calSaved = true;
+  updateMapStatus(); fitView(); redraw();
+  return true;
+}
+
+// ---------- coordinates ----------
+function bounds() {
+  const nodes = [...(state.a ? state.a.nodes : []), ...(state.b ? state.b.nodes : [])];
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const n of nodes) { if (n.x === 0 && n.z === 0) continue; minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x); minZ = Math.min(minZ, n.z); maxZ = Math.max(maxZ, n.z); }
+  return isFinite(minX) ? { minX, maxX, minZ, maxZ } : { minX: -100, maxX: 100, minZ: -100, maxZ: 100 };
+}
+// Without a calibrated image, fit the data into the image (or a virtual 1:1 canvas). North (+z) is up.
+function defaultCal() {
+  const b = bounds();
+  const pad = 0.03;
+  if (state.img) {
+    const w = state.img.naturalWidth, h = state.img.naturalHeight;
+    const ax = w * (1 - 2 * pad) / (b.maxX - b.minX), az = -h * (1 - 2 * pad) / (b.maxZ - b.minZ);
+    return { ax, bx: w * pad - ax * b.minX, az, bz: h * pad - az * b.maxZ };
+  }
+  return { ax: 1, bx: -b.minX, az: -1, bz: b.maxZ };
+}
+const toImg = (x, z) => [state.cal.ax * x + state.cal.bx, state.cal.az * z + state.cal.bz];
+const toScreen = (ix, iy) => [ix * state.view.zoom + state.view.panX, iy * state.view.zoom + state.view.panY];
+const screenToImg = (sx, sy) => [(sx - state.view.panX) / state.view.zoom, (sy - state.view.panY) / state.view.zoom];
+
+function fitView() {
+  if (!state.cal) return;
+  const r = canvas.getBoundingClientRect();
+  state.needsFit = !r.width || !r.height;   // not laid out yet; draw() fits once it has a size
+  if (state.needsFit) return;
+  let x0, y0, x1, y1;
+  if (state.img) { x0 = 0; y0 = 0; x1 = state.img.naturalWidth; y1 = state.img.naturalHeight; }
+  else { const b = bounds(); [x0, y0] = toImg(b.minX, b.maxZ); [x1, y1] = toImg(b.maxX, b.minZ); }
+  const zoom = Math.min(r.width / (x1 - x0), r.height / (y1 - y0)) * 0.95;
+  state.view = { zoom, panX: (r.width - (x1 - x0) * zoom) / 2 - x0 * zoom, panY: (r.height - (y1 - y0) * zoom) / 2 - y0 * zoom };
+}
+
+// ---------- drawing ----------
+// Past its change time while its area was paused (no players near): it will catch up when someone gets close.
+// Only stages that change on a timer count; others (a full-grown tree waiting to be chopped) have no due time.
+const hasTimer = (n) => n.changeIn != null && !!(n._chain && n._chain.stages[n.stage] && n._chain.stages[n.stage].afterSeconds);
+const isOverdue = (n) => hasTimer(n) && n.changeIn < 0;
+const groupShown = (g) => !state.hiddenGroups.has(g) && !state.hiddenKinds.has(state.kindOfGroup.get(g));
+// The first shown group of a node (its most likely outcome in "can spawn" mode), or null if none are shown.
+function shownGroup(n) { for (const g of groupsOf(n)) if (groupShown(g)) return g; return null; }
+// ---------- Find (one resource) ----------
+// Chance (0..1) that a node's spot gives the focus resource each respawn, or null if it never can.
+function focusChance(n) {
+  const o = n._out && n._out.find(o => o.group === state.focus);
+  return o ? (o.chance == null ? 1 : o.chance) : null;
+}
+const focusNow = (n) => n._g === state.focus && !n.disabled;
+
+// The resources worth finding (not grass or clutter), grouped by kind, with how many spots have / can roll each.
+function buildFocusList() {
+  const stats = new Map();
+  for (const n of state.a ? state.a.nodes : []) {
+    for (const o of n._out || []) {
+      if (!state.resourceGroups.has(o.group)) continue;
+      const st = stats.get(o.group) || { now: 0, can: 0, likely: 0 };
+      st.can++;
+      if ((o.chance == null ? 1 : o.chance) >= 0.25) st.likely++;
+      if (n._g === o.group && !n.disabled) st.now++;
+      stats.set(o.group, st);
+    }
+  }
+  state.focusStats = stats;
+  const sel = $("focus"), keep = state.focus;
+  sel.innerHTML = '<option value="">Everything (browse by type)</option>';
+  for (const kind of ["Ores & minerals", "Plants", "Wood", "Stone", "Other"]) {
+    const members = [...stats.keys()].filter(g => kindOf(g) === kind).sort();
+    if (!members.length) continue;
+    const og = document.createElement("optgroup"); og.label = kind;
+    for (const g of members) {
+      const opt = document.createElement("option"); opt.value = g;
+      opt.textContent = `${g} (${stats.get(g).now.toLocaleString()} now)`;
+      og.appendChild(opt);
+    }
+    sel.appendChild(og);
+  }
+  state.focus = stats.has(keep) ? keep : "";
+  sel.value = state.focus;
+  updateFocusStatus();
+}
+
+function updateFocusStatus() {
+  const showLegend = !!(state.focus && state.a);
+  $("legend").style.display = showLegend ? "flex" : "none";
+  $("focusStatus").style.display = showLegend ? "none" : "block";
+  if (state.focus) {
+    const c = colorOf(state.focus);
+    document.querySelector("#legend .dot").style.background = c;
+    document.querySelector("#legend .ring").style.borderColor = c;
+  }
+  if (!state.a) return;
+  const st = state.focus && state.focusStats.get(state.focus);
+  if (st) {
+    // Count what the map shows with the current chance filter.
+    let roll = 0;
+    for (const n of state.a.nodes) if (!focusNow(n) && visible(n)) roll++;
+    const filter = state.minChance > 0.99 ? ", always" : state.minChance > 0 ? `, ${Math.round(state.minChance * 100)}% or better` : "";
+    $("legendNow").textContent = `${state.focus} there now: ${st.now.toLocaleString()}`;
+    $("legendRoll").textContent = `Could roll ${state.focus}${filter}: ${roll.toLocaleString()} (bigger ring = more likely)`;
+  }
+  $("focusStatus").textContent = !st
+    ? "Pick a resource to see where it can be found and how likely it is at each spot."
+    : `${state.focus}: there now at ${st.now.toLocaleString()} spots. ${st.can.toLocaleString()} spots can roll it, ${st.likely.toLocaleString()} of them at 25% or better.`;
+}
+
+function visible(n) {
+  if (state.focus) {
+    const p = focusChance(n);
+    if (p == null) return false;
+    if (!focusNow(n) && p < state.minChance) return false;
+    return !(n.disabled && !state.showDisabled);
+  }
+  if (state.hiddenSources.has(n.source)) return false;
+  if (!shownGroup(n)) return false;
+  if (n.disabled && !state.showDisabled) return false;
+  if (isOverdue(n) && !state.showOverdue) return false;
+  if (state.search && !(n.prefab.toLowerCase().includes(state.search) || groupsOf(n).some(g => g.toLowerCase().includes(state.search)))) return false;
+  return true;
+}
+
+let drawPending = false;
+function redraw() { if (!drawPending) { drawPending = true; requestAnimationFrame(draw); } }
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function draw() {
+  drawPending = false;
+  const dpr = window.devicePixelRatio || 1, r = canvas.getBoundingClientRect();
+  if (canvas.width !== Math.round(r.width * dpr) || canvas.height !== Math.round(r.height * dpr)) {
+    canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, r.width, r.height);
+  if (!state.cal) return;
+  if (state.needsFit) fitView();
+
+  const v = state.view;
+  if (state.img) {
+    ctx.imageSmoothingEnabled = v.zoom < 2;
+    ctx.drawImage(state.img, v.panX, v.panY, state.img.naturalWidth * v.zoom, state.img.naturalHeight * v.zoom);
+  } else {
+    drawGrid(r);
+  }
+
+  const radius = Math.max(1.5, Math.min(5, 2 + Math.log2(v.zoom * Math.abs(state.cal.ax)) * 0.8));
+  if (state.focus && state.a) { drawFocus(r, radius); return; }
+  const comparing = !!state.cmp;
+  const layers = comparing ? [[state.a, "a"], [state.b, "b"]] : [[state.a, "a"]];
+  const sameColor = css("--same"), aColor = css("--a-only"), bColor = css("--b-only");
+  ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 0.75;
+  for (const [d, slot] of layers) {
+    if (!d) continue;
+    for (const n of d.nodes) {
+      if (!visible(n)) continue;
+      if (comparing && slot === "b" && n._match) continue;   // drawn once from dump A
+      const [sx, sy] = toScreen(...toImg(n.x, n.z));
+      if (sx < -10 || sy < -10 || sx > r.width + 10 || sy > r.height + 10) continue;
+      ctx.globalAlpha = n.disabled ? 0.35 : 0.9;
+      ctx.fillStyle = comparing ? (n._match ? sameColor : slot === "a" ? aColor : bColor) : colorOf(shownGroup(n));
+      const rr = comparing && !n._match ? radius + 1 : radius;
+      if (!comparing && state.mode === "now" && isOverdue(n)) {
+        // Hollow ring: what's recorded here is stale and may change as soon as a player gets close.
+        ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = Math.max(1.25, rr * 0.6);
+        ctx.beginPath(); ctx.arc(sx, sy, Math.max(rr, 2.5), 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 0.75;
+        continue;
+      }
+      if (rr < 2.5) { ctx.fillRect(sx - rr, sy - rr, rr * 2, rr * 2); continue; }   // cheap path for big zoomed-out maps
+      ctx.beginPath(); ctx.arc(sx, sy, rr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  if (state.align) for (const p of state.align.pairs) {
+    const [sx, sy] = toScreen(p.i.x, p.i.y);
+    ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+
+// Find mode: rings where the resource can roll (bigger and brighter = more likely), filled dots where it is now.
+function drawFocus(r, radius) {
+  const color = colorOf(state.focus);
+  const rings = [], dots = [];
+  for (const n of state.a.nodes) {
+    if (!visible(n)) continue;
+    const [sx, sy] = toScreen(...toImg(n.x, n.z));
+    if (sx < -12 || sy < -12 || sx > r.width + 12 || sy > r.height + 12) continue;
+    (focusNow(n) ? dots : rings).push([sx, sy, focusChance(n)]);
+  }
+  for (const [sx, sy, p] of rings) {
+    // Hollow ring with a dark edge inside and out, so it can't be mistaken for a dot. Long shots stay faint.
+    const k = Math.sqrt(p), rr = Math.max(3.5, radius * (1 + 1.3 * k)), w = 1.5 + 1.5 * k;
+    ctx.globalAlpha = 0.5 + 0.5 * k;
+    ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineWidth = w + 2;
+    ctx.beginPath(); ctx.arc(sx, sy, rr, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = color; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.arc(sx, sy, rr, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.fillStyle = color; ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.lineWidth = 1.5;
+  for (const [sx, sy] of dots) {
+    ctx.beginPath(); ctx.arc(sx, sy, Math.max(3.5, radius * 1.3), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+}
+
+function drawGrid(r) {
+  // Grid lines every 100 world units, labelled so positions can be read off the map.
+  ctx.strokeStyle = css("--grid"); ctx.fillStyle = css("--muted"); ctx.lineWidth = 1; ctx.font = "11px system-ui";
+  const [wx0, wz0] = [(screenToImg(0, 0)[0] - state.cal.bx) / state.cal.ax, (screenToImg(0, 0)[1] - state.cal.bz) / state.cal.az];
+  const [wx1, wz1] = [(screenToImg(r.width, r.height)[0] - state.cal.bx) / state.cal.ax, (screenToImg(r.width, r.height)[1] - state.cal.bz) / state.cal.az];
+  const span = Math.abs(wx1 - wx0);
+  const step = span > 4000 ? 500 : span > 1500 ? 200 : span > 400 ? 100 : 25;
+  for (let x = Math.ceil(Math.min(wx0, wx1) / step) * step; x <= Math.max(wx0, wx1); x += step) {
+    const [sx] = toScreen(...toImg(x, 0)); ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, r.height); ctx.stroke(); ctx.fillText(x, sx + 3, 12);
+  }
+  for (let z = Math.ceil(Math.min(wz0, wz1) / step) * step; z <= Math.max(wz0, wz1); z += step) {
+    const [, sy] = toScreen(...toImg(0, z)); ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(r.width, sy); ctx.stroke(); ctx.fillText(z, 3, sy - 3);
+  }
+}
+
+// ---------- interaction ----------
+function nearest(sx, sy, maxPx = 8) {
+  let best = null, bestD = maxPx;
+  for (const [d, slot] of [[state.a, "a"], [state.b, "b"]]) {
+    if (!d || (slot === "b" && !state.cmp)) continue;
+    for (const n of d.nodes) {
+      if (!visible(n)) continue;
+      const [px, py] = toScreen(...toImg(n.x, n.z));
+      const dist = Math.hypot(px - sx, py - sy);
+      if (dist < bestD) { bestD = dist; best = { n, slot }; }
+    }
+  }
+  return best;
+}
+
+let drag = null;
+canvas.addEventListener("pointerdown", (e) => {
+  if (state.align) return;
+  drag = { x: e.clientX, y: e.clientY, panX: state.view.panX, panY: state.view.panY, moved: false };
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add("dragging");
+});
+canvas.addEventListener("pointermove", (e) => {
+  const r = canvas.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (drag) {
+    state.view.panX = drag.panX + e.clientX - drag.x; state.view.panY = drag.panY + e.clientY - drag.y;
+    drag.moved = true; $("tip").style.display = "none"; redraw(); return;
+  }
+  showTip(sx, sy);
+});
+canvas.addEventListener("pointerup", (e) => { drag = null; canvas.classList.remove("dragging"); });
+canvas.addEventListener("pointerleave", () => { $("tip").style.display = "none"; });
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const f = Math.exp(-e.deltaY * 0.0015), [ix, iy] = screenToImg(sx, sy);
+  state.view.zoom = Math.min(200, Math.max(0.01, state.view.zoom * f));
+  state.view.panX = sx - ix * state.view.zoom; state.view.panY = sy - iy * state.view.zoom;
+  redraw();
+}, { passive: false });
+canvas.addEventListener("click", (e) => {
+  if (!state.align) return;
+  const r = canvas.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  alignClick(sx, sy);
+});
+
+function showTip(sx, sy) {
+  const tip = $("tip");
+  const hit = state.a && nearest(sx, sy);
+  if (!hit) { tip.style.display = "none"; return; }
+  const n = hit.n;
+  const yields = n.yields && n.yields.length ? "Gives: " + [...new Set(n.yields.map(y => prettify(y.item)))].join(", ") : "";
+  const cmp = state.cmp ? (n._match ? "In both dumps" : hit.slot === "a" ? "Only in loaded dump" : "Only in compare dump") : "";
+  tip.innerHTML = "";
+  if (state.focus) {
+    const p = focusChance(n), head = document.createElement("div");
+    head.style.fontWeight = "600";
+    head.textContent = focusNow(n) ? `${state.focus} is here now`
+      : `${state.focus} here: ${p >= 0.999 ? "every time" : (p < 0.01 ? "<1" : Math.round(p * 100)) + "% each respawn"} (now: ${n._g})`;
+    tip.appendChild(head);
+  }
+  const b = document.createElement("b"); b.textContent = n.prefab; tip.appendChild(b);
+  for (const line of [`x ${n.x}, z ${n.z} (height ${n.y})`, SOURCES[n.source] || n.source, yields, n.disabled ? "Switched off by the game right now (not there to harvest)" : "", changeText(n), cmp]) {
+    if (!line) continue; const div = document.createElement("div"); div.textContent = line; tip.appendChild(div);
+  }
+  const addLine = (text, bold) => { const div = document.createElement("div"); div.textContent = text; if (bold) { div.style.marginTop = "4px"; div.style.fontWeight = "600"; } tip.appendChild(div); };
+  if (n._out && n._out.length > 1) {
+    addLine("Each respawn rolls:", true);
+    for (const o of n._out.slice(0, 10)) addLine(`• ${o.group} — ${o.chance < 0.01 ? "<1" : Math.round(o.chance * 100)}%` + (o.group === n._g ? " (now)" : ""));
+    if (n._out.length > 10) addLine(`…and ${n._out.length - 10} more`);
+  }
+  if (n._chain && n._chain.stages.length > 1) {
+    addLine("Stages:", true);
+    addLine(n._chain.stages.map((st, i) => (i === n.stage ? "▶ " : "") + st.name + (st.afterSeconds ? ` ${formatDuration(st.afterSeconds)}` : "")).join(" → "));
+  }
+  const r = canvas.getBoundingClientRect();
+  tip.style.display = "block";
+  tip.style.left = Math.min(sx + 14, r.width - tip.offsetWidth - 8) + "px";
+  tip.style.top = Math.min(sy + 14, r.height - tip.offsetHeight - 8) + "px";
+}
+
+// ---------- alignment ----------
+// Two-point alignment: pick a node, click where it really is on the image; repeat with a node far from the first.
+function banner(text) { const b = $("banner"); b.textContent = text; b.style.display = text ? "block" : "none"; }
+function startAlign() {
+  if (gameMapCal()) { banner("The game map is lined up automatically from the dump. Align is for your own map images."); setTimeout(() => banner(""), 3000); return; }
+  if (!state.img || !state.a) { banner("Load a dump and a map image first."); setTimeout(() => banner(""), 2500); return; }
+  state.align = { pairs: [], pendingWorld: null };
+  $("alignBtn").classList.add("on"); canvas.classList.add("picking");
+  banner("Step 1 of 4: click a node you can recognise on the map (a lone ore vein works well).");
+}
+function stopAlign(msg) {
+  state.align = null; $("alignBtn").classList.remove("on"); canvas.classList.remove("picking");
+  banner(msg || ""); if (msg) setTimeout(() => banner(""), 3000); redraw();
+}
+function alignClick(sx, sy) {
+  const a = state.align;
+  if (!a.pendingWorld) {
+    const hit = nearest(sx, sy, 12);
+    if (!hit) { banner("No node there. Click directly on a dot."); return; }
+    a.pendingWorld = { x: hit.n.x, z: hit.n.z };
+    banner(`Step ${a.pairs.length * 2 + 2} of 4: now click where that node actually is on the map image.`);
+    return;
+  }
+  const [ix, iy] = screenToImg(sx, sy);
+  a.pairs.push({ w: a.pendingWorld, i: { x: ix, y: iy } }); a.pendingWorld = null;
+  if (a.pairs.length < 2) { banner("Step 3 of 4: pick a second node, far away from the first."); redraw(); return; }
+  const [p, q] = a.pairs;
+  if (Math.abs(q.w.x - p.w.x) < 50 || Math.abs(q.w.z - p.w.z) < 50) { a.pairs = []; banner("Those two nodes are too close in x or z. Pick two nodes far apart diagonally. Step 1 of 4."); return; }
+  const ax = (q.i.x - p.i.x) / (q.w.x - p.w.x), az = (q.i.y - p.i.y) / (q.w.z - p.w.z);
+  state.cal = { ax, bx: p.i.x - ax * p.w.x, az, bz: p.i.y - az * p.w.z };
+  state.calSaved = true;
+  saveLocal("cal", { imgName: state.imgName, cal: state.cal });
+  stopAlign("Aligned. Use Export alignment to share it with the image.");
+  updateMapStatus();
+}
+
+function updateMapStatus() {
+  $("mapStatus").textContent = gameMapCal() ? "Game map, lined up from the dump."
+    : state.imgName === GAME_MAP && state.img ? "Game map loaded. Load a dump from plugin 0.3.0 or newer to line it up."
+    : !state.img ? "No image. Nodes are drawn on a grid. Run tools/extract_map.py to get the game map."
+    : `${state.imgName} (${state.img.naturalWidth}×${state.img.naturalHeight})` + (state.calSaved ? " · aligned" : " · not aligned yet, use Align");
+}
+
+function loadImage(src, name, onMissing) {
+  const img = new Image();
+  img.onload = () => {
+    state.img = img; state.imgName = name;
+    // Prefer this viewer's own alignment for this image, then one shipped in map-calibration.js.
+    const saved = [loadLocal("cal"), window.MAP_CALIBRATION].find(s => s && s.cal && s.imgName === name);
+    const preset = saved ? saved.cal : null;
+    state.cal = preset || (state.a ? defaultCal() : null);
+    state.calSaved = !!preset;
+    if (applyGameMap()) return;
+    updateMapStatus(); fitView(); redraw();
+  };
+  img.onerror = () => {
+    if (onMissing) onMissing();
+    else if (name !== "map.png") $("mapStatus").textContent = `Couldn't load ${name}.`;
+  };
+  img.src = src;
+}
+
+function exportAlign() {
+  if (!state.cal || !state.img) { banner("Align a map image first."); setTimeout(() => banner(""), 2500); return; }
+  const body = `// Map alignment for ResourceMap. Put this next to index.html with ${state.imgName} renamed to map.png.\nwindow.MAP_CALIBRATION = ${JSON.stringify({ imgName: "map.png", width: state.img.naturalWidth, height: state.img.naturalHeight, cal: state.cal }, null, 2)};\n`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([body], { type: "text/javascript" })); a.download = "map-calibration.js"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function importAlign(file) {
+  try {
+    const text = await readFile(file);
+    const json = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    if (!json.cal) throw new Error("no alignment found");
+    state.cal = json.cal; state.calSaved = true; saveLocal("cal", { imgName: state.imgName, cal: state.cal });
+    updateMapStatus(); fitView(); redraw();
+  } catch (e) { $("mapStatus").textContent = `Couldn't read ${file.name}: ${e.message}`; }
+}
+
+// ---------- wiring ----------
+$("fileA").onchange = (e) => e.target.files[0] && loadDump(e.target.files[0], "a");
+$("fileB").onchange = (e) => e.target.files[0] && loadDump(e.target.files[0], "b");
+$("fileImg").onchange = (e) => { const f = e.target.files[0]; if (f) loadImage(URL.createObjectURL(f), f.name); };
+$("fileCal").onchange = (e) => e.target.files[0] && importAlign(e.target.files[0]);
+$("alignBtn").onclick = () => state.align ? stopAlign() : startAlign();
+$("resetAlign").onclick = () => { if (applyGameMap()) return;  state.cal = state.a ? defaultCal() : null; state.calSaved = false; saveLocal("cal", null); updateMapStatus(); fitView(); redraw(); };
+$("exportAlign").onclick = exportAlign;
+$("groupBy").onclick = () => {
+  state.groupBy = state.groupBy === "item" ? "prefab" : "item";
+  $("groupBy").textContent = `Group by: ${state.groupBy}`;
+  state.hiddenGroups.clear(); regroup(); redraw(); saveLocal("groupBy", state.groupBy);
+};
+$("mode").onclick = () => {
+  state.mode = state.mode === "now" ? "can" : "now";
+  $("mode").textContent = state.mode === "now" ? "Show: now" : "Show: can spawn";
+  $("mode").classList.toggle("on", state.mode === "can");
+  regroup(); redraw();
+};
+$("focus").onchange = (e) => { state.focus = e.target.value; saveLocal("focus", state.focus); updateFocusStatus(); redraw(); };
+$("minChance").onchange = (e) => { state.minChance = +e.target.value; updateFocusStatus(); redraw(); };
+$("search").oninput = (e) => { state.search = e.target.value.trim().toLowerCase(); redraw(); };
+$("showDisabled").onchange = (e) => { state.showDisabled = e.target.checked; redraw(); };
+$("showOverdue").onchange = (e) => { state.showOverdue = e.target.checked; redraw(); };
+$("allOn").onclick = (e) => { e.preventDefault(); state.hiddenGroups.clear(); state.hiddenKinds.clear(); regroup(); redraw(); };
+$("allOff").onclick = (e) => { e.preventDefault(); for (const g of state.kindOfGroup.keys()) state.hiddenGroups.add(g); regroup(); redraw(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.align) stopAlign(); });
+window.addEventListener("resize", redraw);
+
+// Drag and drop: JSON files are dumps (first one loaded, second compared), images are the map.
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  for (const f of e.dataTransfer.files) {
+    if (f.type.startsWith("image/")) loadImage(URL.createObjectURL(f), f.name);
+    else if (/\.js$/i.test(f.name)) importAlign(f);
+    else loadDump(f, state.a ? "b" : "a");
+  }
+});
+
+state.focus = loadLocal("focus") || "";
+updateFocusStatus();
+const savedGroupBy = loadLocal("groupBy");
+if (savedGroupBy) { state.groupBy = savedGroupBy; $("groupBy").textContent = `Group by: ${state.groupBy}`; }
+// A map image next to this file is picked up automatically: map.jpg is what tools/extract_map.py writes from the
+// game, map.png is for a picture of your own.
+loadImage("map.jpg", "map.jpg", () => loadImage("map.png", "map.png"));
+redraw();
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>ResourceMap</AssemblyName>
+    <Version>1.0.0</Version>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <!-- Point this at another server's BepInEx\interop folder to build against a different game version. -->
+    <InteropDir Condition="'$(InteropDir)' == ''">$(MSBuildThisFileDirectory)..\lib\interop\interop</InteropDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" IncludeAssets="compile" />
+    <!-- Optional at runtime: chat commands are only registered when VampireCommandFramework is installed. -->
+    <PackageReference Include="VRising.VampireCommandFramework" Version="0.11.0" IncludeAssets="compile" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(InteropDir)\Il2Cppmscorlib.dll" Private="false" />
+    <Reference Include="$(InteropDir)\Unity.Entities.dll" Private="false" />
+    <Reference Include="$(InteropDir)\Unity.Collections.dll" Private="false" />
+    <Reference Include="$(InteropDir)\Unity.Mathematics.dll" Private="false" />
+    <Reference Include="$(InteropDir)\Unity.Transforms.dll" Private="false" />
+    <Reference Include="$(InteropDir)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(InteropDir)\Stunlock.Core.dll" Private="false" />
+    <Reference Include="$(InteropDir)\ProjectM.dll" Private="false" />
+    <Reference Include="$(InteropDir)\ProjectM.Shared.dll" Private="false" />
+    <Reference Include="$(InteropDir)\ProjectM.Terrain.dll" Private="false" />
+  </ItemGroup>
+</Project>

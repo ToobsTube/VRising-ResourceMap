@@ -1,0 +1,19 @@
+# Build output
+plugin/bin/
+plugin/obj/
+dist/
+
+# Game files: interop DLLs are generated from the game and are game code
+lib/
+interop.zip
+
+# Server output and logs
+dumps/
+*.log
+nodes-*.json
+nodes-*.json.gz
+
+# Game art: extract it from your own install with tools/extract_map.py
+viewer/map.jpg
+viewer/map.png
+viewer/map-calibration.js
