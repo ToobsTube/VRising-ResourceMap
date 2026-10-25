@@ -1,0 +1,47 @@
+[size=5][b]Prospector[/b][/size]
+[i]A V Rising server plugin that knows where the resources really are, and the odds for every spot.[/i]
+
+[b]This is a server plugin (BepInEx).[/b] Whoever runs the server installs it. Players then use it through chat commands, and through map dumps the server owner shares.
+
+Community maps tell you where sulfur [i]can[/i] appear. Prospector tells you that a given spot is 2% sulfur and 91% stone, and which spots are worth the trip.
+
+[size=4][b]Features[/b][/size]
+[list]
+[*][b].rmap find copper[/b]: the nearest copper around you, with distance and direction.
+[*][b].rmap mark copper[/b]: the same, and it puts your map marker on it, so the game draws a path there.
+[*][b]Discord sharing[/b]: server owners can add a Discord webhook, and the server posts a file with the current resources to that channel. Players download it from Discord, with no access to the server needed. It works on hosted servers too, with no ports or FTP.
+[*][b]Map viewer[/b]: open that file in your browser at [url=https://toobstube.com/vrising-map/]toobstube.com/vrising-map[/url]. Pick a resource: dots show where it is now, rings show where it can roll (bigger = more likely), and a filter hides the long shots.
+[*][b].rmap help[/b] lists only the commands each player can actually use, and players get a short message about it when they join.
+[*]Dumps run in the background without lagging the server, and old dumps are cleaned up automatically.
+[/list]
+
+[size=4][b]Requirements[/b][/size]
+[list]
+[*][url=https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/]BepInExPack V Rising[/url] on the dedicated server.
+[*][url=https://thunderstore.io/c/v-rising/p/deca/VampireCommandFramework/]VampireCommandFramework[/url] for the chat commands (optional: everything else works without it).
+[/list]
+
+[size=4][b]Install[/b][/size]
+Extract the zip into the server's main folder (the one with [b]VRisingServer.exe[/b]). It installs to [b]BepInEx/plugins/ResourceMap/[/b]. Files and commands use the name ResourceMap.
+
+On the first start, the bundled config is copied to [b]BepInEx/config/community.vrising.resourcemap.cfg[/b]. Updates never overwrite your settings.
+
+[size=4][b]Chat commands[/b][/size]
+[list]
+[*][b].rmap help[/b] (everyone): the commands you can use.
+[*][b].rmap find <resource> [range][/b]: nearest node of that kind, e.g. copper, sulfur, iron, ghost crystal, stone, blood rose.
+[*][b].rmap mark <resource> [range][/b]: like find, and sets your map marker on it.
+[*][b].rmap dump[/b] (admins): write a fresh dump now.
+[*][b].rmap reload[/b] (admins): reload the config without restarting.
+[/list]
+find and mark are admin-only by default; set [b]FindAdminOnly = false[/b] to let every player use them. Range limit and cooldown are configurable.
+
+[size=4][b]Good to know[/b][/size]
+[list]
+[*]The game pauses areas with no players nearby, and spots there only catch up (and may re-roll into something else) when someone gets close. So "there now" is most accurate around players.
+[*]On Windows servers, don't leave the server's console window in "Select" mode (the title starts with "Select" after you click in it). Windows pauses the server while it's in that mode. Press Esc to resume.
+[/list]
+
+[size=4][b]More[/b][/size]
+All settings, Discord setup, building from source and the dump format: [url=https://github.com/ToobsTube/VRising-ResourceMap]GitHub[/url].
+Source is MIT licensed. V Rising belongs to Stunlock Studios; this mod isn't affiliated with them.

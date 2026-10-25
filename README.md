@@ -5,7 +5,7 @@ A **server plugin** (BepInEx) that knows where the resources really are on your 
 It runs on the server, so whoever runs the server installs it. Players then use it through chat commands, and through map dumps the server owner shares.
 
 - **Chat commands:** `.rmap find copper` gives the nearest copper around you. `.rmap mark copper` puts your map marker on it, so the game draws a path there.
-- **Map viewer:** open a dump at **https://toobstube-site.pages.dev/vrising-map/** (or `viewer/index.html` from this repo). Pick a resource and see where it is now (dots) and where it can roll (rings, bigger = more likely).
+- **Map viewer:** open a dump at **https://toobstube.com/vrising-map/** (or `viewer/index.html` from this repo). Pick a resource and see where it is now (dots) and where it can roll (rings, bigger = more likely).
 - **Sharing:** dumps can be posted to a Discord channel automatically, which also works on hosted servers with no ports or FTP.
 
 Files and commands use the name *ResourceMap* (`ResourceMap.dll`, `.rmap`).
@@ -77,7 +77,7 @@ Players download the newest file from the channel and drop it into the viewer. T
 
 ## Using the viewer
 
-Open **https://toobstube-site.pages.dev/vrising-map/**, or `viewer/index.html` from this repo. Load a dump (or drag it onto the map). The file is read in your browser and never uploaded anywhere.
+Open **https://toobstube.com/vrising-map/**, or `viewer/index.html` from this repo. Load a dump (or drag it onto the map). The file is read in your browser and never uploaded anywhere.
 
 - **Find:** pick a resource. Filled dots are where it is **now**. Rings are spots that **can roll** it, and bigger, brighter rings are more likely. Hover a spot for its exact odds and what's there now.
 - **Chance filter:** hide the long shots ("25% or better", "50% or better", ...) to see the spots worth farming.
