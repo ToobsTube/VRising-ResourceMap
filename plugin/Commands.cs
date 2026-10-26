@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Il2CppInterop.Runtime;
 using ProjectM;
 using ProjectM.Network;
@@ -21,27 +22,44 @@ public class Commands
 
     public static void Register() => CommandRegistry.RegisterAll();
 
-    // Lists only what this player can use with the current config (VCF's own .help doesn't know that find/mark
-    // can be made admin-only in our config).
+    // Lists only what this player can actually use: our own config (find/mark can be admin-only), plus the same
+    // permission checks VCF runs before every command, its admin check and any permission mod such as VRoles.
     [Command("help", description: "Show the ResourceMap commands you can use.")]
     public void Help(ChatCommandContext ctx)
     {
         bool canSearch = Plugin.FindEnabled.Value && (ctx.IsAdmin || !Plugin.FindAdminOnly.Value);
         var lines = new List<string>();
-        if (canSearch)
-        {
-            string range = Plugin.FindMaxRange.Value > 0 ? $" (within {Plugin.FindMaxRange.Value}m)" : "";
+        string range = Plugin.FindMaxRange.Value > 0 ? $" (within {Plugin.FindMaxRange.Value}m)" : "";
+        if (canSearch && Permitted(ctx, nameof(Find)))
             lines.Add($".rmap find <resource> - nearest resource around you{range}, e.g. .rmap find copper");
+        if (canSearch && Permitted(ctx, nameof(Mark)))
             lines.Add(".rmap mark <resource> - same, and puts your map marker on it");
-        }
-        if (ctx.IsAdmin)
-        {
+        if (Permitted(ctx, nameof(Dump)))
             lines.Add(".rmap dump - write a fresh resource dump now");
+        if (Permitted(ctx, nameof(Reload)))
             lines.Add(".rmap reload - reload the ResourceMap config");
-        }
         ctx.Reply(lines.Count > 0
             ? "ResourceMap commands:\n" + string.Join("\n", lines)
             : "There are no ResourceMap commands you can use on this server.");
+    }
+
+    // Would VCF let this player run the command? Asks every registered middleware, exactly as VCF does before
+    // executing it. If a middleware misbehaves, fall back to the command's own admin flag.
+    static bool Permitted(ChatCommandContext ctx, string methodName)
+    {
+        var method = typeof(Commands).GetMethod(methodName);
+        var command = method.GetCustomAttribute<CommandAttribute>();
+        try
+        {
+            foreach (var middleware in CommandRegistry.Middlewares)
+                if (!middleware.CanExecute(ctx, command, method)) return false;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Plugin.Logger.LogWarning($"Permission check for .rmap {command.Name} failed; using its admin setting. {e.Message}");
+            return !command.AdminOnly || ctx.IsAdmin;
+        }
     }
 
     [Command("dump", description: "Write a fresh resource dump now.", adminOnly: true)]
@@ -54,7 +72,7 @@ public class Commands
     [Command("reload", description: "Reload the ResourceMap config file.", adminOnly: true)]
     public void Reload(ChatCommandContext ctx)
     {
-        Plugin.Instance.Config.Reload();
+        Plugin.Settings.Reload();
         ctx.Reply("ResourceMap config reloaded.");
     }
 

@@ -310,7 +310,7 @@ public static class NodeDumper
     static string OutputFolder()
     {
         string folder = Plugin.OutputFolder.Value.Trim();
-        if (folder.Length == 0) return Path.Combine(Paths.BepInExRootPath, "ResourceMap");
+        if (folder.Length == 0) return Path.Combine(Plugin.DataRoot, "ResourceMap");
         // BepInEx reads "\\" in a config value as one backslash, so a network path typed normally
         // (two leading backslashes) arrives with only one, which Windows would treat as a folder on the current drive.
         if (folder.StartsWith("\\") && !folder.StartsWith("\\\\")) folder = "\\" + folder;
@@ -322,13 +322,27 @@ public static class NodeDumper
     {
         int keep = Plugin.KeepDumps.Value;
         if (keep <= 0) return;
-        var dumps = Directory.GetFiles(folder, "nodes-????????-??????.json");
-        Array.Sort(dumps, StringComparer.Ordinal);
-        for (int i = 0; i < dumps.Length - keep; i++)
+        foreach (var pattern in new[] { "nodes-????????-??????.json", "nodes-????????-??????.json.gz" })
         {
-            try { File.Delete(dumps[i]); }
-            catch (Exception e) { Plugin.Logger.LogWarning($"Couldn't delete old dump {dumps[i]}: {e.Message}"); }
+            var dumps = Directory.GetFiles(folder, pattern);
+            Array.Sort(dumps, StringComparer.Ordinal);
+            for (int i = 0; i < dumps.Length - keep; i++)
+            {
+                try { File.Delete(dumps[i]); }
+                catch (Exception e) { Plugin.Logger.LogWarning($"Couldn't delete old dump {dumps[i]}: {e.Message}"); }
+            }
         }
+    }
+
+    // Gzips a file, writing under a temporary name first so readers never see a half-written file.
+    static void Compress(string source, string target)
+    {
+        string temp = target + ".tmp";
+        using (var input = File.OpenRead(source))
+        using (var output = File.Create(temp))
+        using (var zip = new GZipStream(output, CompressionLevel.Optimal))
+            input.CopyTo(zip);
+        File.Move(temp, target, true);
     }
 
     static string Write(List<NodeRecord> nodes, ChainReader chains, List<MapZoneReader.MapZone> mapZones, string gameVersion, bool manual)
@@ -392,23 +406,31 @@ public static class NodeDumper
             json.WriteEndObject();
         }
 
-        File.Move(temp, stamped);
-        string latestTemp = Path.Combine(folder, "nodes-latest.json.tmp");
-        File.Copy(stamped, latestTemp, true);
-        File.Move(latestTemp, Path.Combine(folder, "nodes-latest.json"), true);
-
-        PruneOldDumps(folder);
+        // In a mod manager profile (single player through ServerLaunchFix) only compressed copies are kept: mod
+        // managers' config editors list every .json file in the profile, and a 50+ MB dump doesn't belong there.
+        bool compressedOnly = Plugin.DataRoot != Paths.BepInExRootPath;
+        string source = temp;
+        if (!compressedOnly)
+        {
+            File.Move(temp, stamped);
+            source = stamped;
+            string latestTemp = Path.Combine(folder, "nodes-latest.json.tmp");
+            File.Copy(stamped, latestTemp, true);
+            File.Move(latestTemp, Path.Combine(folder, "nodes-latest.json"), true);
+        }
 
         // A compressed copy (about 1/15 the size) for sharing; the viewer opens it directly.
         string gz = Path.Combine(folder, "nodes-latest.json.gz");
-        string gzTemp = gz + ".tmp";
-        using (var input = File.OpenRead(stamped))
-        using (var output = File.Create(gzTemp))
-        using (var zip = new GZipStream(output, CompressionLevel.Optimal))
-            input.CopyTo(zip);
-        File.Move(gzTemp, gz, true);
+        Compress(source, gz);
+        if (compressedOnly)
+        {
+            File.Copy(gz, stamped + ".gz", true);
+            File.Delete(temp);
+        }
 
-        string summary = $"Wrote {nodes.Count} resource nodes to {stamped}";
+        PruneOldDumps(folder);
+
+        string summary = $"Wrote {nodes.Count} resource nodes to {(compressedOnly ? stamped + ".gz" : stamped)}";
         if (manual || Plugin.PostAutomaticDumps.Value)
         {
             string caption = $"Resource dump: {nodes.Count:N0} nodes · game {gameVersion} · {now:yyyy-MM-dd HH:mm}";

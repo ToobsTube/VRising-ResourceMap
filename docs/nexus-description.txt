@@ -24,7 +24,15 @@ Community maps tell you where sulfur [i]can[/i] appear. Prospector tells you tha
 [size=4][b]Install[/b][/size]
 Extract the zip into the server's main folder (the one with [b]VRisingServer.exe[/b]). It installs to [b]BepInEx/plugins/ResourceMap/[/b]. Files and commands use the name ResourceMap.
 
-On the first start, the bundled config is copied to [b]BepInEx/config/community.vrising.resourcemap.cfg[/b]. Updates never overwrite your settings.
+On the first start, the bundled config is copied to [b]BepInEx/config/Prospector.cfg[/b]. Updates never overwrite your settings, and an older community.vrising.resourcemap.cfg is renamed to Prospector.cfg automatically.
+
+[size=4][b]Single player / host & play[/b][/size]
+These games run the dedicated server in the background, so Prospector works there too. With a mod manager (Thunderstore app or r2modman), install [url=https://thunderstore.io/c/v-rising/p/Mythic/ServerLaunchFix/]ServerLaunchFix[/url] together with Prospector and VampireCommandFramework, so the background server loads your mods.
+[list]
+[*]The first launch can time out while BepInEx builds its files; just try again.
+[*]You're not admin by default in single player: use [b]adminauth[/b] in the console, or set [b]FindAdminOnly = false[/b].
+[*]Settings show up in the mod manager's Config editor as [b]BepInEx/config/Prospector.cfg[/b] after your first single-player start. Dumps go to [b]BepInEx/ResourceMap[/b] in your profile folder, as compressed .json.gz files the viewer opens directly.
+[/list]
 
 [size=4][b]Chat commands[/b][/size]
 [list]

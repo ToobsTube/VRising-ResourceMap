@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- `.rmap help` now follows the same permission checks as the commands themselves, including permission mods such as VRoles, so players only see commands they can really use.
+- Single player / host & play with ServerLaunchFix: settings and dumps now live in the profile's normal `BepInEx` folder, so the mod manager's Config editor shows Prospector's settings. Dumps there are written compressed only (`.json.gz`), so they don't fill the editor's file list, and the config template ships as `.cfg.template` so only the real config is listed.
+- The config is now called `Prospector.cfg`, so it's easy to find. An existing `community.vrising.resourcemap.cfg` is renamed automatically on first start, keeping all settings.
+- README: single player / host & play, how to use Prospector with VRoles, and a note that much of the code was written with AI assistance (Claude Code).
+
 ## 1.0.0
 
 First public release, as Prospector (files and commands use the name ResourceMap).

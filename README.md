@@ -20,12 +20,18 @@ Needs [BepInExPack V Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInE
 
 ```
 BepInEx/plugins/ResourceMap/ResourceMap.dll
-BepInEx/plugins/ResourceMap/community.vrising.resourcemap.cfg
+BepInEx/plugins/ResourceMap/Prospector.cfg.template
 ```
 
 **Thunderstore / r2modman:** install ResourceMap for your server profile. Its dependencies are installed for you.
 
-On the first start, the bundled config is copied to `BepInEx/config/community.vrising.resourcemap.cfg`. Edit the bundled one **before** the first start if you want your settings from the beginning. Updates never overwrite your settings: the bundled file is only used when no config exists yet.
+**Single player / host & play:** these games run the dedicated server in the background, so Prospector works there too. With the Thunderstore app or r2modman, install [ServerLaunchFix](https://thunderstore.io/c/v-rising/p/Mythic/ServerLaunchFix/) alongside Prospector and VampireCommandFramework, so the background server loads your mods. The first launch can time out while BepInEx builds its files; just try again. Notes:
+
+- In single player you're not admin by default. Use `adminauth` in the console, or set `FindAdminOnly = false`.
+- Prospector's settings show up in the mod manager's **Config editor** after your first single-player start: edit **`BepInEx/config/Prospector.cfg`**.
+- Dumps go to `BepInEx/ResourceMap` in your profile folder (*Settings → Browse profile folder*), as compressed `.json.gz` files only, so they don't clutter the Config editor. The viewer opens them directly.
+
+On the first start, the bundled template (`Prospector.cfg.template`, next to the DLL) is copied to `BepInEx/config/Prospector.cfg`. Edit the template **before** the first start if you want your settings from the beginning; after that, edit the file in `BepInEx/config`. Updates never overwrite your settings: the template is only used when no config exists yet. (Before 1.0.1 the config was called `community.vrising.resourcemap.cfg`; it's renamed to `Prospector.cfg` automatically, with your settings.)
 
 About a minute after the world loads, the server log shows `Wrote N resource nodes to …/BepInEx/ResourceMap/nodes-….json`. That file (or `nodes-latest.json.gz`, the compressed copy) is what you open in the viewer.
 
@@ -43,11 +49,26 @@ Typed in normal game chat. They need VampireCommandFramework on the server. Ever
 | `.rmap dump` | admins | Write a fresh dump now. It runs in the background without lagging the server, and you get a message when it's done. |
 | `.rmap reload` | admins | Reload the config file without restarting. |
 
+### Using with VRoles (or another permission mod)
+
+[VRoles](https://thunderstore.io/c/v-rising/p/odjit/VRoles/) lets you give commands to roles instead of just admins. To let only a role (say `trusted`) use `find` and `mark`:
+
+1. Set `FindAdminOnly = false` in the config, so Prospector's own setting doesn't block them.
+2. In game, as admin:
+   ```
+   .role disallow rmap.find
+   .role disallow rmap.mark
+   .role allow rmap.find trusted
+   .role allow rmap.mark trusted
+   ```
+
+`.rmap help` follows the same permission checks as the commands themselves, so each player only sees what they can really use, with VRoles or without it. VRoles is optional; Prospector doesn't need it.
+
 The server pauses areas with no players nearby, and spots there only catch up (and may re-roll into something else) when someone gets close. So `find` and the "there now" view are most accurate around players.
 
 ## Settings
 
-`BepInEx/config/community.vrising.resourcemap.cfg`. Apply changes with `.rmap reload` (everything except `DelaySeconds`, which only matters at server start).
+`BepInEx/config/Prospector.cfg`. Apply changes with `.rmap reload` (everything except `DelaySeconds`, which only matters at server start).
 
 | Setting | Default | What it does |
 |---|---|---|
