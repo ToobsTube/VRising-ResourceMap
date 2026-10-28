@@ -48,7 +48,8 @@ def main():
         "version_number": v,
         "website_url": "https://github.com/ToobsTube/VRising-ResourceMap",
         "description": "Server plugin: every ore, plant and tree on your server with per-spot spawn odds. "
-                       "Chat commands to find and mark resources, and Discord sharing of map dumps.",
+                       "Chat commands to find and mark resources, Discord sharing of map dumps. "
+                       "Works in single player with ServerLaunchFix.",
         "dependencies": THUNDERSTORE_DEPENDENCIES,
     }
     assert len(manifest["description"]) <= 250
