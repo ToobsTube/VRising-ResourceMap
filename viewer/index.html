@@ -191,12 +191,17 @@ function prefabKey(p) {
           .replace(/_?\d+[A-Za-z]?(?=_|$)/g, "")
           .replace(/_+/g, "_").replace(/^_|_$/g, "");
 }
-function prefabFamily(p) { return prettify(prefabKey(p)) || prettify(p); }
+function prefabFamily(p) {
+  const gem = /^Gem(Crude|Regular|Flawless)$/.exec(prefabKey(p));
+  if (gem) return `${gem[1]} Gem Vein`;
+  return prettify(prefabKey(p)) || prettify(p);
+}
 // A resource gives items when harvested; everything else (decor, barrels, fences) is clutter, whatever its name says.
 // Breakables are grouped by what they are, not what they drop, so a barrel isn't listed as "Wood".
 const isResource = (n) => n.yields && n.yields.length && kindOf(n.prefab) !== "Breakables & clutter";
 function groupOf(n) {
-  if (state.groupBy === "item" && isResource(n)) {
+  // Gem veins only list their stone; the gems come from a loot roll the dump doesn't include, so they keep their name.
+  if (state.groupBy === "item" && isResource(n) && !/^Gem/.test(prefabKey(n.prefab))) {
     const top = n.yields.reduce((m, y) => y.amount > m.amount ? y : m, n.yields[0]);
     return prettify(top.item);
   }
@@ -207,6 +212,7 @@ function groupOf(n) {
 const FIXED_COLORS = {
   "Copper Ore": "#d9772b", "Iron Ore": "#4a6fa5", "Silver Ore": "#c7ccd6", "Sulfur Ore": "#ffe119", "Quartz": "#f5a3c7",
   "Emery": "#3cb44b", "Ghost Crystal": "#46f0f0", "Blood Crystal": "#c4122f", "Tech Scrap": "#808000", "Stone": "#9a938c",
+  "Crude Gem Vein": "#b04ad9", "Regular Gem Vein": "#4363d8", "Flawless Gem Vein": "#00e5ff",
 };
 function assignColors(groups) {
   state.colors = new Map(Object.entries(FIXED_COLORS));
