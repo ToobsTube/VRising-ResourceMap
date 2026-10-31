@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Il2CppInterop.Runtime;
 using ProjectM;
@@ -77,13 +78,21 @@ public class Commands
     }
 
     [Command("find", usage: "<resource> [range]", description: "Find the nearest resource around you, e.g. .rmap find copper")]
-    public void Find(ChatCommandContext ctx, string resource, int range = 0) => Search(ctx, resource, range, false);
+    public void Find(ChatCommandContext ctx, string resource, string word2 = "", string word3 = "", string word4 = "") =>
+        Search(ctx, resource, word2, word3, word4, false);
 
     [Command("mark", usage: "<resource> [range]", description: "Put your map marker on the nearest resource, e.g. .rmap mark copper")]
-    public void Mark(ChatCommandContext ctx, string resource, int range = 0) => Search(ctx, resource, range, true);
+    public void Mark(ChatCommandContext ctx, string resource, string word2 = "", string word3 = "", string word4 = "") =>
+        Search(ctx, resource, word2, word3, word4, true);
 
-    static void Search(ChatCommandContext ctx, string resource, int range, bool mark)
+    // The resource can be several words ("crude gem"), so the range is whichever word comes last, if it's a number.
+    static void Search(ChatCommandContext ctx, string first, string word2, string word3, string word4, bool mark)
     {
+        var words = new List<string> { first, word2, word3, word4 }.FindAll(w => !string.IsNullOrWhiteSpace(w));
+        int range = 0;
+        if (words.Count > 1 && int.TryParse(words[^1], out int r)) { range = r; words.RemoveAt(words.Count - 1); }
+        string resource = string.Join(" ", words);
+
         if (!Plugin.FindEnabled.Value) { ctx.Reply("Resource finding is turned off on this server."); return; }
         if (Plugin.FindAdminOnly.Value && !ctx.IsAdmin) { ctx.Reply("Only admins can use .rmap find on this server."); return; }
 
@@ -103,7 +112,7 @@ public class Commands
         var em = world.EntityManager;
         var prefabs = world.GetExistingSystemManaged<PrefabCollectionSystem>();
         float3 me = NodeDumper.PositionOf(em, ctx.Event.SenderCharacterEntity);
-        string term = Normalize(resource);
+        var terms = resource.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(Normalize).ToArray();
 
         var matches = new List<(float dist, Entity entity)>();
         var builder = new EntityQueryBuilder(Allocator.Temp)
@@ -120,7 +129,7 @@ public class Commands
                 float3 pos = NodeDumper.PositionOf(em, entity);
                 float dist = math.distance(new float2(pos.x, pos.z), new float2(me.x, me.z));
                 if (dist > range) continue;
-                if (!Matches(em, prefabs, entity, term)) continue;
+                if (!Matches(em, prefabs, entity, terms)) continue;
                 matches.Add((dist, entity));
             }
         }
@@ -155,15 +164,19 @@ public class Commands
         em.SetComponentData(e, new SetMapMarkerEvent { Position = position });
     }
 
-    // A node matches when its prefab or the items it gives contain the search term. Only harvestable nodes count, so
-    // rubble and stumps left behind after mining don't show up.
-    static bool Matches(EntityManager em, PrefabCollectionSystem prefabs, Entity entity, string term)
+    // A node matches when every search word is in its prefab name or the items it gives, in any order, so "crude gem"
+    // finds TM_GemCrude. Only harvestable nodes count, so rubble and stumps left behind after mining don't show up.
+    static bool Matches(EntityManager em, PrefabCollectionSystem prefabs, Entity entity, string[] terms)
     {
         var yields = NodeDumper.YieldsOf(em, entity, guid => NameOf(prefabs, guid));
         if (yields == null || yields.Count == 0) return false;
-        if (Normalize(NameOf(prefabs, em.GetComponentData<PrefabGUID>(entity))).Contains(term)) return true;
+        string prefab = Normalize(NameOf(prefabs, em.GetComponentData<PrefabGUID>(entity)));
+        if (terms.All(t => prefab.Contains(t))) return true;
         foreach (var y in yields)
-            if (Normalize(y.Item).Contains(term)) return true;
+        {
+            string item = Normalize(y.Item);
+            if (terms.All(t => item.Contains(t))) return true;
+        }
         return false;
     }
 

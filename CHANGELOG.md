@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- `.rmap find` and `.rmap mark` take names of several words in any order: `crude gem`, `gem crude`, `ghost crystal` and `blood rose` all work without quotes, and a number at the end is still the range (`.rmap find crude gem 200`). Before, a second word was read as the range, so two-word names failed.
+
 ## 1.0.1
 
 - `.rmap help` now follows the same permission checks as the commands themselves, including permission mods such as VRoles, so players only see commands they can really use.

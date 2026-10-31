@@ -14,7 +14,7 @@ public class Plugin : BasePlugin
 {
     public const string Guid = "community.vrising.resourcemap";
     public const string Name = "ResourceMap";
-    public const string Version = "1.0.1";
+    public const string Version = "1.0.2";
     const string VcfGuid = "gg.deca.VampireCommandFramework";
     // Named after the mod rather than BepInEx's default (the plugin GUID), so it's easy to find among other configs.
     const string ConfigFileName = "Prospector.cfg";

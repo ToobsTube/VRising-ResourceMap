@@ -37,7 +37,7 @@ These games run the dedicated server in the background, so Prospector works ther
 [size=4][b]Chat commands[/b][/size]
 [list]
 [*][b].rmap help[/b] (everyone): the commands you can use.
-[*][b].rmap find <resource> [range][/b]: nearest node of that kind, e.g. copper, sulfur, iron, ghost crystal, stone, blood rose.
+[*][b].rmap find <resource> [range][/b]: nearest node of that kind, e.g. copper, sulfur, iron, ghost crystal, stone, blood rose, crude gem. Words can be in any order; a number at the end is the range.
 [*][b].rmap mark <resource> [range][/b]: like find, and sets your map marker on it.
 [*][b].rmap dump[/b] (admins): write a fresh dump now.
 [*][b].rmap reload[/b] (admins): reload the config without restarting.

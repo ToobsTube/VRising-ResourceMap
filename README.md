@@ -44,7 +44,7 @@ Typed in normal game chat. They need VampireCommandFramework on the server. Ever
 | Command | Who | What it does |
 |---|---|---|
 | `.rmap help` | everyone | Lists the ResourceMap commands you can use. |
-| `.rmap find <resource> [range]` | admins, or everyone if `FindAdminOnly = false` | Nearest harvestable node of that kind around you, with distance, direction and coordinates. Matches names like `copper`, `sulfur`, `iron`, `ghost crystal`, `stone`, `blood rose`. |
+| `.rmap find <resource> [range]` | admins, or everyone if `FindAdminOnly = false` | Nearest harvestable node of that kind around you, with distance, direction and coordinates. Matches names like `copper`, `sulfur`, `iron`, `ghost crystal`, `stone`, `blood rose`, `crude gem`. Words can come in any order, and a number at the end is the range: `.rmap find crude gem 200`. |
 | `.rmap mark <resource> [range]` | same as `find` | Like `find`, then puts your map marker on that node, so the game draws its guide path to it. Replaces any marker you had. |
 | `.rmap dump` | admins | Write a fresh dump now. It runs in the background without lagging the server, and you get a message when it's done. |
 | `.rmap reload` | admins | Reload the config file without restarting. |
